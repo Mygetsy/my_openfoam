@@ -1,0 +1,28 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  dev                                   |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      poreLayerProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+poreRadius          [ m ]   1e-5;
+substratePosition   [ m ]   0;
+
+poreLayerBoxMin (-0.0001 -0.0001 -0.00004); // Xmin,Ymin,Zmin
+poreLayerBoxMax (0.0004 0.0001 -0.0001);   // Xmax,Ymax,Zmax
+
+seed                123;
+amplitudeRadius     0.3;
+numberOfPores	    40;
+
+// ************************************************************************* //
