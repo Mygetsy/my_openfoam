@@ -50,5 +50,6 @@ sigma
 
 beta            beta            [ K^-1 ] 0.0;
 mushyCoeff      mushyCoeff      [ kg/m^3/s ] 5e+3; // 1e+12 for PDAS=750nm
+qMushyCoeff     qMushyCoeff                  1e-15; // 1e+12 for PDAS=750nm
 
 // ************************************************************************* //

@@ -37,6 +37,7 @@ divSchemes
     div(phi,k)                  Gauss upwind;
     div(phi,T)                  Gauss upwind;
     div(phi,liquidFractionInMetal)     Gauss upwind;
+    div(phi,liquidFraction)     Gauss upwind;
 }
 
 laplacianSchemes
@@ -48,6 +49,7 @@ interpolationSchemes
 {
     //default         linear;
     flux(U)                     linear;
+    interpolate(h)              linear;
     interpolate(nHat)           linear;
     interpolate(rho)            linear;
     interpolate(rAU)            linear;
