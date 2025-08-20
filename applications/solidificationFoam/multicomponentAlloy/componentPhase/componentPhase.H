@@ -24,183 +24,123 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::componentPhase
+    Foam::ComponentPhase
 
 Description
-    Abstract base class for an alloy component phase.
+    Class template for an arbitrary phase boundary of the alloy component.
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef componentPhase_H
-#define componentPhase_H
+#ifndef ComponentPhase_H
+#define ComponentPhase_H
 
-#include "volFields.H"
-#include "dictionaryEntry.H"
+#include "componentPhase.H"
+#include "multicomponentAlloy.H"
+#include "generateGeometricField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-class alloyComponent;
-
 /*---------------------------------------------------------------------------*\
-                           Class componentPhase Declaration
+                         Class ComponentPhase Declaration
 \*---------------------------------------------------------------------------*/
 
-class componentPhase
+template<class PhaseBoundary>
+class ComponentPhase
+:
+    public componentPhase
 {
     // Private Data
 
-        //- Name of the phase
-        const word name_;
-
-        //- Diffusion coefficient [m2/s]
-        const dimensionedScalar diffusion_;
-
-        //- Reference to the alloy component
-        const alloyComponent& component_;
-
-protected:
-
-    // Protected data
-
-        //- Reference to the mesh
-        const fvMesh& mesh_;
+        //- Phase boundary
+        const PhaseBoundary phaseBoundary_;
 
 public:
 
     //- Runtime type information
-    TypeName("componentPhase");
+    TypeName("ComponentPhase");
 
-    // Declare run-time constructor selection table
-    declareRunTimeSelectionTable
-    (
-        autoPtr,
-        componentPhase,
-        dictionary,
-        (
-            const dictionaryEntry& entry,
-            const fvMesh& mesh,
-            const alloyComponent& component
-        ),
-        (entry, mesh, component)
-    );
-
-
-    // Constructors
-
-        //- Construct from components
-        componentPhase
-        (
-            const dictionaryEntry& entry,
-            const fvMesh& mesh,
-            const alloyComponent& component
-        );
-
-        //- Helper for construction of componentPhase PtrList/PtrDictionary
-        class iNew
-        {
-            const word& modelType_;
-            const fvMesh& mesh_;
-            const alloyComponent& component_;
-
-        public:
-
-            iNew
-            (
-                const word& modelType,
-                const fvMesh& mesh,
-                const alloyComponent& component
-            )
-            :
-                modelType_(modelType),
-                mesh_(mesh),
-                component_(component)
-            {}
-
-            autoPtr<componentPhase> operator()(Istream& is) const
-            {
-                dictionaryEntry entry(dictionary::null, is);
-                return autoPtr<componentPhase>
-                (
-                    componentPhase::New(entry, modelType_, mesh_, component_)
-                );
-            }
-        };
-
-        //- Return clone (need for PtrList)
-        autoPtr<componentPhase> clone() const
-        {
-            notImplemented("componentPhase::clone() const");
-            return autoPtr<componentPhase>();
-        }
-
-
-    //- Selector
-    static autoPtr<componentPhase> New
+    //- Constructor
+    ComponentPhase
     (
         const dictionaryEntry& entry,
-        const word& modelType,
         const fvMesh& mesh,
         const alloyComponent& component
     );
 
     //- Destructor
-    virtual ~componentPhase() = default;
+    ~ComponentPhase() final = default;
 
 
     // Member Functions
 
-        // Access
+        //- Return the equilibrium concentration field []
+        tmp<volScalarField> equilibrium(const volScalarField& T) const final
+        {
+            return generateGeometricField<volScalarField>
+            (
+                "equilibrium_" + name(),
+                mesh_,
+                dimless,
+                [this](scalar T)
+                {
+                    return phaseBoundary_.equilibrium(T);
+                },
+                T
+            );
+        }
 
-            //- Return name of the phase (need for PtrDictionary)
-            const word& keyword() const
-            {
-                return name_;
-            }
+        //- Return the equilibrium concentration []
+        dimensionedScalar equilibrium(const dimensionedScalar& T) const final
+        {
+            return dimensionedScalar
+            (
+                "equilibrium_" + name(),
+                dimless,
+                phaseBoundary_.equilibrium(T.value())
+            );
+        }
 
-            //- Return the diffusion coefficients (solid and liquid) [m2/s]
-            const dimensionedScalar& diffusion() const
-            {
-                return diffusion_;
-            }
+        //- Return the slope along the solidification path field [K]
+        tmp<volScalarField> slope(const volScalarField& T) const final
+        {
+            return generateGeometricField<volScalarField>
+            (
+                "slope_" + name(),
+                mesh_,
+                dimTemperature,
+                [this](scalar T)
+                {
+                    return phaseBoundary_.slope(T);
+                },
+                T
+            );
+        }
 
-            //- Return the reference to the component
-            const alloyComponent& component() const
-            {
-                return component_;
-            }
-
-        // Evaluation
-
-            //- Return alloy component phase name
-            word name() const;
-
-            //- Return the equilibrium concentration field []
-            virtual tmp<volScalarField> equilibrium(const volScalarField& T) const = 0;
-
-            //- Return the equilibrium concentration []
-            virtual dimensionedScalar equilibrium(const dimensionedScalar& T) const = 0;
-
-            //- Return the slope along the solidification path field [K]
-            virtual tmp<volScalarField> slope(const volScalarField& T) const = 0;
-
-            //- Return the slope along the solidification path [K]
-            virtual dimensionedScalar slope(const dimensionedScalar& T) const = 0;
-
-            //- Return the derivative of the equilibrium concentration [1/K]
-            template<class T1>
-            auto equilibriumPrime(const T1& T) const -> decltype(T+T)
-            {
-                return 1/slope(T);
-            }
+        //- Return the slope along the solidification path [K]
+        dimensionedScalar slope(const dimensionedScalar& T) const final
+        {
+            return dimensionedScalar
+            (
+                "slope_" + name(),
+                dimTemperature,
+                phaseBoundary_.slope(T.value())
+            );
+        }
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "ComponentPhaseTemplates.C"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
